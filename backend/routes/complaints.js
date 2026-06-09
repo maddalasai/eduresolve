@@ -61,7 +61,7 @@ router.get('/my', authenticateToken, async (req, res) => {
             LEFT JOIN users u ON c.student_id = u.id
             LEFT JOIN complaint_categories cat ON c.category_id = cat.id
             WHERE c.student_id = $1
-            ORDER BY priority_score DESC, c.created_at DESC
+            ORDER BY (COALESCE(c.upvote_count,0)*2 + COALESCE(cat.weight,1) + COALESCE(c.escalation_level,0)*10 + LEAST(EXTRACT(DAY FROM NOW()-c.created_at)::int,7)) DESC, c.created_at DESC
         `, [req.user.id]);
         res.json(result.rows);
     } catch (err) {
@@ -82,7 +82,6 @@ const PRIORITY_SELECT = `
     SELECT c.*,
            u.name as student_name,
            cat.name as category_name,
-           -- Priority score calculation
            (
                (COALESCE(c.upvote_count, 0) * 2)
                + COALESCE(cat.weight, 1)
@@ -108,7 +107,7 @@ router.get('/', authenticateToken, async (req, res) => {
                 ${PRIORITY_SELECT}
                 WHERE (c.assigned_to = $1 OR (c.assigned_to IS NULL AND c.status = 'OPEN'))
                 AND cat.routes_to = 'SUPPORT_STAFF'
-                ORDER BY priority_score DESC, c.created_at DESC
+                ORDER BY (COALESCE(c.upvote_count,0)*2 + COALESCE(cat.weight,1) + COALESCE(c.escalation_level,0)*10 + LEAST(EXTRACT(DAY FROM NOW()-c.created_at)::int,7)) DESC, c.created_at DESC
             `;
             params = [req.user.id];
         } else if (role === 'COORDINATOR') {
@@ -117,7 +116,7 @@ router.get('/', authenticateToken, async (req, res) => {
                 ${PRIORITY_SELECT}
                 WHERE c.escalation_level >= 1
                 AND cat.routing_type = 'COLLEGE'
-                ORDER BY priority_score DESC, c.created_at DESC
+                ORDER BY (COALESCE(c.upvote_count,0)*2 + COALESCE(cat.weight,1) + COALESCE(c.escalation_level,0)*10 + LEAST(EXTRACT(DAY FROM NOW()-c.created_at)::int,7)) DESC, c.created_at DESC
             `;
         } else if (role === 'HOD') {
             // HOD sees COLLEGE complaints escalated from Coordinator (level >= 2)
@@ -125,7 +124,7 @@ router.get('/', authenticateToken, async (req, res) => {
                 ${PRIORITY_SELECT}
                 WHERE c.escalation_level >= 2
                 AND cat.routing_type = 'COLLEGE'
-                ORDER BY priority_score DESC, c.created_at DESC
+                ORDER BY (COALESCE(c.upvote_count,0)*2 + COALESCE(cat.weight,1) + COALESCE(c.escalation_level,0)*10 + LEAST(EXTRACT(DAY FROM NOW()-c.created_at)::int,7)) DESC, c.created_at DESC
             `;
         } else if (role === 'WARDEN') {
             // Warden sees HOSTEL complaints at level 0 (first handler in hostel chain)
@@ -133,7 +132,7 @@ router.get('/', authenticateToken, async (req, res) => {
                 ${PRIORITY_SELECT}
                 WHERE cat.routing_type = 'HOSTEL'
                 AND c.escalation_level = 0
-                ORDER BY priority_score DESC, c.created_at DESC
+                ORDER BY (COALESCE(c.upvote_count,0)*2 + COALESCE(cat.weight,1) + COALESCE(c.escalation_level,0)*10 + LEAST(EXTRACT(DAY FROM NOW()-c.created_at)::int,7)) DESC, c.created_at DESC
             `;
         } else if (role === 'HOSTEL_MANAGER') {
             // Hostel Manager sees HOSTEL complaints escalated from Warden (level >= 1)
@@ -141,27 +140,27 @@ router.get('/', authenticateToken, async (req, res) => {
                 ${PRIORITY_SELECT}
                 WHERE cat.routing_type = 'HOSTEL'
                 AND c.escalation_level >= 1
-                ORDER BY priority_score DESC, c.created_at DESC
+                ORDER BY (COALESCE(c.upvote_count,0)*2 + COALESCE(cat.weight,1) + COALESCE(c.escalation_level,0)*10 + LEAST(EXTRACT(DAY FROM NOW()-c.created_at)::int,7)) DESC, c.created_at DESC
             `;
         } else if (role === 'LIBRARIAN') {
             // Librarian sees all Library complaints (level 0)
             query = `
                 ${PRIORITY_SELECT}
                 WHERE cat.routes_to = 'LIBRARIAN'
-                ORDER BY priority_score DESC, c.created_at DESC
+                ORDER BY (COALESCE(c.upvote_count,0)*2 + COALESCE(cat.weight,1) + COALESCE(c.escalation_level,0)*10 + LEAST(EXTRACT(DAY FROM NOW()-c.created_at)::int,7)) DESC, c.created_at DESC
             `;
         } else if (role === 'TRANSPORT_MANAGER') {
             // Transport Manager sees all Transport complaints (level 0)
             query = `
                 ${PRIORITY_SELECT}
                 WHERE cat.routes_to = 'TRANSPORT_MANAGER'
-                ORDER BY priority_score DESC, c.created_at DESC
+                ORDER BY (COALESCE(c.upvote_count,0)*2 + COALESCE(cat.weight,1) + COALESCE(c.escalation_level,0)*10 + LEAST(EXTRACT(DAY FROM NOW()-c.created_at)::int,7)) DESC, c.created_at DESC
             `;
         } else {
             // ADMIN sees everything, sorted by priority
             query = `
                 ${PRIORITY_SELECT}
-                ORDER BY priority_score DESC, c.created_at DESC
+                ORDER BY (COALESCE(c.upvote_count,0)*2 + COALESCE(cat.weight,1) + COALESCE(c.escalation_level,0)*10 + LEAST(EXTRACT(DAY FROM NOW()-c.created_at)::int,7)) DESC, c.created_at DESC
             `;
         }
 
