@@ -14,292 +14,161 @@ function Dashboard() {
     const url = isStudent
       ? 'http://localhost:5000/api/complaints/my'
       : 'http://localhost:5000/api/complaints';
-    axios.get(url, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(res => {
-      setComplaints(res.data);
-      setLoading(false);
-    }).catch(err => {
-      console.error(err);
-      setLoading(false);
-    });
+    axios.get(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => { setComplaints(res.data); setLoading(false); })
+      .catch(() => setLoading(false));
   }, []);
 
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate('/');
-  };
+  const handleLogout = () => { localStorage.clear(); navigate('/'); };
 
   const handleStatusUpdate = async (id, newStatus) => {
     try {
       await axios.patch(
         `http://localhost:5000/api/complaints/${id}/status`,
         { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` }}
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      setComplaints(complaints.map(c =>
-        c.id === id ? { ...c, status: newStatus } : c
-      ));
-    } catch (err) {
-      console.error(err);
-    }
+      setComplaints(complaints.map(c => c.id === id ? { ...c, status: newStatus } : c));
+    } catch (err) { console.error(err); }
   };
 
-  const getStatusStyle = (status) => {
-    const base = {
-      padding: '4px 12px',
-      borderRadius: '20px',
-      fontSize: '12px',
-      fontWeight: '600',
-      display: 'inline-block',
-    };
-    switch(status) {
-      case 'OPEN': return { ...base, backgroundColor: '#fee2e2', color: '#dc2626' };
-      case 'IN_PROGRESS': return { ...base, backgroundColor: '#fef3c7', color: '#d97706' };
-      case 'RESOLVED': return { ...base, backgroundColor: '#d1fae5', color: '#059669' };
-      case 'ESCALATED': return { ...base, backgroundColor: '#ede9fe', color: '#7c3aed' };
-      default: return { ...base, backgroundColor: '#f3f4f6', color: '#6b7280' };
-    }
-  };
-
-  const getRoleColor = (role) => {
-    const colors = {
-      'ADMIN': '#4f46e5',
-      'STUDENT': '#059669',
-      'SUPPORT_STAFF': '#d97706',
-      'HOD': '#dc2626',
-      'COORDINATOR': '#7c3aed',
-      'WARDEN': '#0891b2',
-      'HOSTEL_MANAGER': '#be185d',
-    };
-    return colors[role] || '#6b7280';
-  };
-
-  const totalComplaints = complaints.length;
-  const openComplaints = complaints.filter(c => c.status === 'OPEN').length;
-  const resolvedComplaints = complaints.filter(c => c.status === 'RESOLVED').length;
-  const escalatedComplaints = complaints.filter(c => c.status === 'ESCALATED').length;
+  const total     = complaints.length;
+  const open      = complaints.filter(c => c.status === 'OPEN').length;
+  const resolved  = complaints.filter(c => c.status === 'RESOLVED').length;
+  const escalated = complaints.filter(c => c.status === 'ESCALATED').length;
 
   return (
-    <div style={styles.container}>
-      {/* SIDEBAR */}
-      <div style={styles.sidebar}>
-        <div style={styles.sidebarLogo}>
-          <span style={{ fontSize: '24px' }}>🎓</span>
+    <div style={s.shell}>
+      {/* ── SIDEBAR ── */}
+      <aside style={s.sidebar}>
+        <div style={s.brand}>
+          <div style={s.brandMark}>E</div>
           <div>
-            <div style={styles.sidebarLogoText}>EduResolve</div>
-            <div style={styles.sidebarLogoSub}>Campus Voice</div>
+            <div style={s.brandName}>EduResolve</div>
+            <div style={s.brandSub}>Campus Portal</div>
           </div>
         </div>
 
-        <nav style={styles.nav}>
-          <div style={styles.navLabel}>NAVIGATION</div>
-
-          <div style={{...styles.navItem, ...styles.navItemActive}}>
-            📊 Dashboard
-          </div>
-
-          {isStudent && (
-            <div
-              style={styles.navItem}
-              onClick={() => navigate('/my-complaints')}>
-              📋 My Complaints
-            </div>
-          )}
-
-          {!isStudent && (
-            <div
-              style={styles.navItem}
-              onClick={() => navigate('/all-complaints')}>
-              📋 All Complaints
-            </div>
-          )}
-
-          <div
-            style={styles.navItem}
-            onClick={() => navigate('/submit')}>
-            ➕ Submit Complaint
-          </div>
+        <nav style={s.nav}>
+          <div style={s.navSection}>MENU</div>
+          <div style={{ ...s.navItem, ...s.navActive }}>Dashboard</div>
+          {isStudent
+            ? <div style={s.navItem} onClick={() => navigate('/my-complaints')}>My Complaints</div>
+            : <div style={s.navItem} onClick={() => navigate('/all-complaints')}>All Complaints</div>
+          }
+          <div style={s.navItem} onClick={() => navigate('/submit')}>Submit Complaint</div>
         </nav>
 
-        <div style={styles.sidebarUser}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            backgroundColor: getRoleColor(user?.role),
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: '700',
-            fontSize: '16px',
-            flexShrink: 0,
-          }}>
-            {user?.name?.charAt(0).toUpperCase()}
+        <div style={s.sideUser}>
+          <div style={s.userAvatar}>{user?.name?.charAt(0).toUpperCase()}</div>
+          <div style={s.userInfo}>
+            <div style={s.userName}>{user?.name}</div>
+            <div style={s.userRole}>{user?.role?.replace('_', ' ')}</div>
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={styles.sidebarUserName}>{user?.name}</div>
-            <div style={styles.sidebarUserRole}>{user?.role}</div>
-          </div>
-          <button onClick={handleLogout}
-            style={styles.logoutBtn} title="Logout">
-            🚪
-          </button>
+          <button onClick={handleLogout} style={s.logoutBtn} title="Sign out">↩</button>
         </div>
-      </div>
+      </aside>
 
-      {/* MAIN CONTENT */}
-      <div style={styles.main}>
-        {/* HEADER */}
-        <div style={styles.header}>
+      {/* ── MAIN ── */}
+      <main style={s.main}>
+        {/* Top bar */}
+        <div style={s.topbar}>
           <div>
-            <h1 style={styles.headerTitle}>
-              {isStudent ? 'My Dashboard' : 'Overview'}
-            </h1>
-            <p style={styles.headerSubtitle}>
-              Welcome back, {user?.name}!
-            </p>
+            <h1 style={s.pageTitle}>{isStudent ? 'My Dashboard' : 'Dashboard Overview'}</h1>
+            <div style={s.pageSub}>Welcome back, {user?.name}</div>
           </div>
-          <button onClick={() => navigate('/submit')}
-            style={styles.newComplaintBtn}>
+          <button style={s.primaryBtn} onClick={() => navigate('/submit')}>
             + New Complaint
           </button>
         </div>
 
-        {/* STATS CARDS */}
-        <div style={styles.statsGrid}>
-          <div style={styles.statCard}>
-            <div style={styles.statIcon}>📝</div>
-            <div style={styles.statNumber}>{totalComplaints}</div>
-            <div style={styles.statLabel}>Total Complaints</div>
-          </div>
-          <div style={{...styles.statCard, borderTop: '3px solid #dc2626'}}>
-            <div style={styles.statIcon}>🔴</div>
-            <div style={{...styles.statNumber, color: '#dc2626'}}>
-              {openComplaints}
+        {/* Stats */}
+        <div style={s.statsRow}>
+          {[
+            { label: 'Total',     value: total,     accent: '#2563eb' },
+            { label: 'Open',      value: open,      accent: '#dc2626' },
+            { label: 'Resolved',  value: resolved,  accent: '#16a34a' },
+            { label: 'Escalated', value: escalated, accent: '#7c3aed' },
+          ].map(st => (
+            <div key={st.label} style={s.statCard}>
+              <div style={{ ...s.statAccent, backgroundColor: st.accent }} />
+              <div style={{ ...s.statVal, color: st.accent }}>{st.value}</div>
+              <div style={s.statLbl}>{st.label}</div>
             </div>
-            <div style={styles.statLabel}>Open</div>
-          </div>
-          <div style={{...styles.statCard, borderTop: '3px solid #059669'}}>
-            <div style={styles.statIcon}>✅</div>
-            <div style={{...styles.statNumber, color: '#059669'}}>
-              {resolvedComplaints}
-            </div>
-            <div style={styles.statLabel}>Resolved</div>
-          </div>
-          <div style={{...styles.statCard, borderTop: '3px solid #7c3aed'}}>
-            <div style={styles.statIcon}>⚡</div>
-            <div style={{...styles.statNumber, color: '#7c3aed'}}>
-              {escalatedComplaints}
-            </div>
-            <div style={styles.statLabel}>Escalated</div>
-          </div>
+          ))}
         </div>
 
-        {/* QUICK ACTION — Submit only */}
-        <div style={styles.quickLinks}>
-          <div style={styles.quickCard} onClick={() => navigate('/submit')}>
-            <div style={styles.quickIcon}>➕</div>
-            <div style={styles.quickTitle}>Submit New Complaint</div>
-            <div style={styles.quickSub}>Report a new issue on campus</div>
+        {/* Quick actions */}
+        <div style={s.actionRow}>
+          <div style={s.actionCard} onClick={() => navigate('/submit')}>
+            <div style={s.actionTitle}>Submit a Complaint</div>
+            <div style={s.actionSub}>Report a new campus issue</div>
           </div>
-
-          <div style={{
-            ...styles.quickCard,
-            background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
-            color: 'white',
-          }}>
-            <div style={styles.quickIcon}>📊</div>
-            <div style={{...styles.quickTitle, color: 'white'}}>
-              {totalComplaints} Total
+          <div style={{ ...s.actionCard, ...s.actionCardDark }}>
+            <div style={{ ...s.actionTitle, color: 'white' }}>
+              {total} Complaint{total !== 1 ? 's' : ''}
             </div>
-            <div style={{...styles.quickSub, color: 'rgba(255,255,255,0.8)'}}>
-              {openComplaints} open · {resolvedComplaints} resolved · {escalatedComplaints} escalated
+            <div style={{ ...s.actionSub, color: 'rgba(255,255,255,0.6)' }}>
+              {open} open · {resolved} resolved · {escalated} escalated
             </div>
           </div>
         </div>
 
-        {/* RECENT COMPLAINTS TABLE */}
-        <div style={styles.tableCard}>
-          <div style={styles.tableHeader}>
-            <h2 style={styles.tableTitle}>
-              {isStudent ? '📋 Recent Complaints' : '📋 Recent Activity'}
-            </h2>
-            <button
-              onClick={() => navigate(isStudent ? '/my-complaints' : '/all-complaints')}
-              style={styles.viewAllBtn}>
-              View All →
+        {/* Table */}
+        <div style={s.tableWrap}>
+          <div style={s.tableHead}>
+            <div style={s.tableTitle}>
+              {isStudent ? 'Recent Complaints' : 'Recent Activity'}
+            </div>
+            <button style={s.viewAllBtn}
+              onClick={() => navigate(isStudent ? '/my-complaints' : '/all-complaints')}>
+              View all
             </button>
           </div>
 
           {loading ? (
-            <div style={styles.loading}>Loading...</div>
+            <div style={s.center}>Loading...</div>
           ) : complaints.length === 0 ? (
-            <div style={styles.empty}>
-              <div style={{ fontSize: '48px', marginBottom: '10px' }}>📭</div>
-              <div style={{ color: '#6b7280', fontSize: '16px' }}>
-                No complaints yet
-              </div>
-              <button onClick={() => navigate('/submit')}
-                style={styles.emptyBtn}>
+            <div style={s.center}>
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>—</div>
+              <div style={{ color: '#64748b' }}>No complaints yet</div>
+              <button style={{ ...s.primaryBtn, marginTop: '16px' }} onClick={() => navigate('/submit')}>
                 Submit your first complaint
               </button>
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table style={styles.table}>
+              <table style={s.table}>
                 <thead>
-                  <tr style={styles.tableHeadRow}>
-                    <th style={styles.th}>ID</th>
-                    <th style={styles.th}>Title</th>
-                    <th style={styles.th}>Category</th>
-                    {!isStudent && <th style={styles.th}>Student</th>}
-                    <th style={styles.th}>Status</th>
-                    {!isStudent && <th style={styles.th}>Update</th>}
-                    <th style={styles.th}>Date</th>
+                  <tr>
+                    {['ID', 'Title', 'Category', !isStudent && 'Student', 'Status', !isStudent && 'Update', 'Date']
+                      .filter(Boolean).map(h => <th key={h} style={s.th}>{h}</th>)}
                   </tr>
                 </thead>
                 <tbody>
-                  {complaints.slice(0, 5).map((c, index) => (
-                    <tr key={c.id}
-                      style={index % 2 === 0 ? styles.trEven : styles.trOdd}>
-                      <td style={styles.td}>
-                        <span style={styles.idBadge}>#{c.id}</span>
+                  {complaints.slice(0, 8).map((c, i) => (
+                    <tr key={c.id} style={i % 2 === 0 ? s.trEven : s.trOdd}>
+                      <td style={s.td}><span style={s.idTag}>#{c.id}</span></td>
+                      <td style={{ ...s.td, fontWeight: '500', maxWidth: '220px' }}>
+                        <div style={s.ellipsis}>{c.title}</div>
                       </td>
-                      <td style={{...styles.td, fontWeight: '500', maxWidth: '200px'}}>
-                        {c.title}
-                      </td>
-                      <td style={styles.td}>
-                        <span style={styles.categoryBadge}>
-                          {c.category_name}
-                        </span>
-                      </td>
+                      <td style={s.td}><span style={s.catTag}>{c.category_name}</span></td>
+                      {!isStudent && <td style={{ ...s.td, color: '#64748b' }}>{c.student_name}</td>}
+                      <td style={s.td}><span style={statusStyle(c.status)}>{c.status.replace('_', ' ')}</span></td>
                       {!isStudent && (
-                        <td style={{...styles.td, color: '#6b7280'}}>
-                          {c.student_name}
-                        </td>
-                      )}
-                      <td style={styles.td}>
-                        <span style={getStatusStyle(c.status)}>
-                          {c.status}
-                        </span>
-                      </td>
-                      {!isStudent && (
-                        <td style={styles.td}>
-                          <select
-                            value={c.status}
-                            onChange={(e) => handleStatusUpdate(c.id, e.target.value)}
-                            style={styles.select}>
-                            <option value="OPEN">OPEN</option>
-                            <option value="IN_PROGRESS">IN PROGRESS</option>
-                            <option value="RESOLVED">RESOLVED</option>
-                            <option value="ESCALATED">ESCALATED</option>
+                        <td style={s.td}>
+                          <select value={c.status}
+                            onChange={e => handleStatusUpdate(c.id, e.target.value)}
+                            style={s.select}>
+                            <option value="OPEN">Open</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="RESOLVED">Resolved</option>
+                            <option value="ESCALATED">Escalated</option>
                           </select>
                         </td>
                       )}
-                      <td style={{...styles.td, color: '#9ca3af', fontSize: '13px'}}>
-                        {new Date(c.created_at).toLocaleDateString()}
+                      <td style={{ ...s.td, color: '#94a3b8', fontSize: '12px' }}>
+                        {new Date(c.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>
                     </tr>
                   ))}
@@ -308,273 +177,80 @@ function Dashboard() {
             </div>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }
 
-const styles = {
-  container: {
-    display: 'flex',
-    minHeight: '100vh',
-    backgroundColor: '#f3f4f6',
-    fontFamily: "'Segoe UI', Arial, sans-serif",
-  },
-  sidebar: {
-    width: '240px',
-    backgroundColor: '#1e1b4b',
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '24px 0',
-    position: 'fixed',
-    height: '100vh',
-    left: 0,
-    top: 0,
-  },
-  sidebarLogo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '0 20px 24px',
-    borderBottom: '1px solid rgba(255,255,255,0.1)',
-    marginBottom: '16px',
-  },
-  sidebarLogoText: {
-    color: 'white',
-    fontWeight: '700',
-    fontSize: '16px',
-  },
-  sidebarLogoSub: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: '11px',
-  },
-  nav: { flex: 1, padding: '0 12px' },
-  navLabel: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: '11px',
-    fontWeight: '600',
-    letterSpacing: '1px',
-    padding: '8px 8px',
-    marginBottom: '4px',
-  },
-  navItem: {
-    color: 'rgba(255,255,255,0.7)',
-    padding: '10px 12px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    marginBottom: '4px',
-    transition: 'background 0.2s',
-  },
-  navItemActive: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    color: 'white',
-    fontWeight: '600',
-  },
-  sidebarUser: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    padding: '16px 20px',
-    borderTop: '1px solid rgba(255,255,255,0.1)',
-    marginTop: 'auto',
-  },
-  sidebarUserName: {
-    color: 'white',
-    fontSize: '13px',
-    fontWeight: '600',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
-  sidebarUserRole: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: '11px',
-  },
-  logoutBtn: {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '18px',
-    padding: '4px',
-  },
-  main: {
-    marginLeft: '240px',
-    flex: 1,
-    padding: '30px',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '24px',
-  },
-  headerTitle: {
-    fontSize: '24px',
-    fontWeight: '700',
-    color: '#111827',
-    margin: 0,
-  },
-  headerSubtitle: {
-    color: '#6b7280',
-    fontSize: '14px',
-    marginTop: '4px',
-  },
-  newComplaintBtn: {
-    padding: '10px 20px',
-    backgroundColor: '#4f46e5',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontWeight: '600',
-    fontSize: '14px',
-  },
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '16px',
-    marginBottom: '24px',
-  },
-  statCard: {
-    backgroundColor: 'white',
-    padding: '20px',
-    borderRadius: '12px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    borderTop: '3px solid #4f46e5',
-  },
-  statIcon: { fontSize: '24px', marginBottom: '8px' },
-  statNumber: {
-    fontSize: '32px',
-    fontWeight: '700',
-    color: '#111827',
-    lineHeight: 1,
-  },
-  statLabel: {
-    fontSize: '13px',
-    color: '#6b7280',
-    marginTop: '4px',
-  },
-  quickLinks: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '16px',
-    marginBottom: '24px',
-  },
-  quickCard: {
-    backgroundColor: 'white',
-    padding: '20px',
-    borderRadius: '12px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    cursor: 'pointer',
-    border: '1px solid #e5e7eb',
-  },
-  quickIcon: { fontSize: '28px', marginBottom: '10px' },
-  quickTitle: {
-    fontSize: '15px',
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: '4px',
-  },
-  quickSub: {
-    fontSize: '13px',
-    color: '#6b7280',
-  },
-  tableCard: {
-    backgroundColor: 'white',
-    borderRadius: '12px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    overflow: 'hidden',
-  },
-  tableHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '20px 24px',
-    borderBottom: '1px solid #f3f4f6',
-  },
-  tableTitle: {
-    fontSize: '16px',
-    fontWeight: '600',
-    color: '#111827',
-    margin: 0,
-  },
-  viewAllBtn: {
-    padding: '6px 14px',
-    backgroundColor: '#f3f4f6',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '13px',
-    color: '#4f46e5',
-    fontWeight: '600',
-  },
-  loading: {
-    padding: '60px',
-    textAlign: 'center',
-    color: '#6b7280',
-  },
-  empty: {
-    padding: '60px',
-    textAlign: 'center',
-  },
-  emptyBtn: {
-    marginTop: '16px',
-    padding: '10px 20px',
-    backgroundColor: '#4f46e5',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '14px',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-  },
-  tableHeadRow: {
-    backgroundColor: '#f9fafb',
-  },
-  th: {
-    padding: '12px 16px',
-    textAlign: 'left',
-    fontSize: '12px',
-    fontWeight: '600',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    borderBottom: '1px solid #e5e7eb',
-  },
+function statusStyle(status) {
+  const base = { padding: '3px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: '700', display: 'inline-block', letterSpacing: '0.4px' };
+  switch (status) {
+    case 'OPEN':        return { ...base, backgroundColor: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' };
+    case 'IN_PROGRESS': return { ...base, backgroundColor: '#fffbeb', color: '#92400e', border: '1px solid #fde68a' };
+    case 'RESOLVED':    return { ...base, backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' };
+    case 'ESCALATED':   return { ...base, backgroundColor: '#faf5ff', color: '#6b21a8', border: '1px solid #e9d5ff' };
+    default:            return { ...base, backgroundColor: '#f1f5f9', color: '#475569' };
+  }
+}
+
+const SIDEBAR_W = '220px';
+
+const s = {
+  shell: { display: 'flex', minHeight: '100vh', backgroundColor: '#f1f5f9', fontFamily: "'Segoe UI', Arial, sans-serif" },
+
+  // Sidebar
+  sidebar: { width: SIDEBAR_W, backgroundColor: '#0f2744', display: 'flex', flexDirection: 'column', position: 'fixed', height: '100vh', top: 0, left: 0 },
+  brand: { display: 'flex', alignItems: 'center', gap: '10px', padding: '24px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)' },
+  brandMark: { width: '32px', height: '32px', borderRadius: '6px', backgroundColor: '#2563eb', color: 'white', fontWeight: '800', fontSize: '17px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  brandName: { color: 'white', fontWeight: '700', fontSize: '15px' },
+  brandSub: { color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginTop: '1px' },
+  nav: { flex: 1, padding: '16px 12px' },
+  navSection: { color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: '700', letterSpacing: '1.2px', padding: '8px 10px 6px' },
+  navItem: { color: 'rgba(255,255,255,0.6)', padding: '9px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', marginBottom: '2px' },
+  navActive: { backgroundColor: 'rgba(37,99,235,0.25)', color: 'white', fontWeight: '600', borderLeft: '3px solid #2563eb' },
+  sideUser: { display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 16px', borderTop: '1px solid rgba(255,255,255,0.07)' },
+  userAvatar: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#2563eb', color: 'white', fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  userInfo: { flex: 1, minWidth: 0 },
+  userName: { color: 'white', fontSize: '12px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  userRole: { color: 'rgba(255,255,255,0.4)', fontSize: '10px', marginTop: '1px' },
+  logoutBtn: { background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: '16px', padding: '4px' },
+
+  // Main
+  main: { marginLeft: SIDEBAR_W, flex: 1, padding: '28px 32px' },
+  topbar: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #e2e8f0' },
+  pageTitle: { fontSize: '20px', fontWeight: '700', color: '#0f172a', margin: 0 },
+  pageSub: { fontSize: '13px', color: '#64748b', marginTop: '3px' },
+  primaryBtn: { padding: '9px 18px', backgroundColor: '#1e3a5f', color: 'white', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
+
+  // Stats
+  statsRow: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '20px' },
+  statCard: { backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '18px 20px', position: 'relative', overflow: 'hidden' },
+  statAccent: { position: 'absolute', top: 0, left: 0, right: 0, height: '3px' },
+  statVal: { fontSize: '30px', fontWeight: '800', lineHeight: 1, marginBottom: '4px', marginTop: '8px' },
+  statLbl: { fontSize: '12px', color: '#64748b', fontWeight: '500' },
+
+  // Actions
+  actionRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' },
+  actionCard: { backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '18px 20px', cursor: 'pointer' },
+  actionCardDark: { backgroundColor: '#0f2744', border: '1px solid #0f2744' },
+  actionTitle: { fontSize: '14px', fontWeight: '600', color: '#0f172a', marginBottom: '4px' },
+  actionSub: { fontSize: '12px', color: '#64748b' },
+
+  // Table
+  tableWrap: { backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' },
+  tableHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #f1f5f9' },
+  tableTitle: { fontSize: '14px', fontWeight: '600', color: '#0f172a' },
+  viewAllBtn: { fontSize: '12px', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600' },
+  table: { width: '100%', borderCollapse: 'collapse' },
+  th: { padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' },
   trEven: { backgroundColor: 'white' },
   trOdd: { backgroundColor: '#fafafa' },
-  td: {
-    padding: '14px 16px',
-    fontSize: '14px',
-    color: '#111827',
-    borderBottom: '1px solid #f3f4f6',
-  },
-  idBadge: {
-    color: '#6b7280',
-    fontSize: '13px',
-    fontWeight: '500',
-  },
-  categoryBadge: {
-    backgroundColor: '#eff6ff',
-    color: '#2563eb',
-    padding: '3px 10px',
-    borderRadius: '20px',
-    fontSize: '12px',
-    fontWeight: '500',
-  },
-  select: {
-    padding: '6px 10px',
-    borderRadius: '6px',
-    border: '1px solid #e5e7eb',
-    fontSize: '13px',
-    backgroundColor: 'white',
-    cursor: 'pointer',
-    color: '#374151',
-  },
+  td: { padding: '12px 16px', fontSize: '13px', color: '#1e293b', borderBottom: '1px solid #f1f5f9' },
+  idTag: { color: '#94a3b8', fontSize: '12px', fontWeight: '600', fontFamily: 'monospace' },
+  catTag: { backgroundColor: '#eff6ff', color: '#1d4ed8', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600' },
+  ellipsis: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '220px' },
+  select: { padding: '5px 8px', borderRadius: '5px', border: '1px solid #cbd5e1', fontSize: '12px', backgroundColor: 'white', cursor: 'pointer', color: '#374151' },
+  center: { padding: '60px', textAlign: 'center', color: '#64748b' },
 };
 
 export default Dashboard;
